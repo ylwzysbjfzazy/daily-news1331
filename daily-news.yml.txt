@@ -1,0 +1,31 @@
+name: 每日13方向新闻
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  get-news:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 调用Claude获取13方向信息
+        run: |
+          curl -X POST https://api.anthropic.com/v1/messages \
+            -H "x-api-key: ${{ secrets.ANTHROPIC_API_KEY }}" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            -d '{
+              "model": "claude-3-haiku-20240307",
+              "max_tokens": 4096,
+              "messages": [{
+                "role": "user",
+                "content": "13方向：宏观经济、金融市场、前沿科技、国际政治、中国政策、军事、产业商业、文化消费、社会民生、环境能源、农业食品、法律监管、其他。外加交易所动态（币安、Hyperliquid、Coinbase）。分国内/国外。只要最新，不要预测。每条必须标注来源和日期。请用联网搜索功能。"
+              }]
+            }' > news_result.txt
+      
+      - name: 发送到微信
+        run: |
+          curl -X POST https://sctapi.ftqq.com/${{ secrets.SERVERCHAN_KEY }}.send \
+            -d "title=每日13方向新闻" \
+            -d "desp=$(cat news_result.txt)"
